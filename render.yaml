@@ -1,0 +1,16 @@
+# Blueprint do Render: cria o serviço web gratuito automaticamente.
+# O áudio/vídeo/tela NÃO roda aqui: usa o LiveKit Cloud (preencha as 3 variáveis abaixo no painel).
+services:
+  - type: web
+    name: resenha
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: LIVEKIT_URL
+        sync: false   # ex.: wss://seu-projeto.livekit.cloud
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false

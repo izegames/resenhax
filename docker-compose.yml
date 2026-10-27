@@ -1,0 +1,11 @@
+# LiveKit local para desenvolvimento (voz, webcam e compartilhamento de tela).
+# O modo --dev usa as chaves devkey / secret, as mesmas do server/.env.example.
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --dev --bind 0.0.0.0
+    ports:
+      - "7880:7880"       # API / WebSocket de sinalização
+      - "7881:7881"       # WebRTC sobre TCP (fallback)
+      - "7882:7882/udp"   # WebRTC sobre UDP (mídia)
+    restart: unless-stopped
