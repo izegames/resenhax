@@ -54,7 +54,20 @@ app.post('/api/livekit/token', async (req, res) => {
   const name = typeof username === 'string' ? username.trim().slice(0, 40) : '';
 
   if (!channel || channel.type !== 'voice' || !name) {
-    return res.status(400).json({ error: 'Canal de voz ou usuário inválido' });
+    return res.status(400).json({
+      error: 'Canal de voz não encontrado. Se o servidor reiniciou, os canais antigos sumiram: recarregue a página.',
+    });
+  }
+
+  // Acessando por um endereço de internet mas com o LiveKit apontando pra localhost:
+  // o navegador do usuário nunca vai conseguir conectar. Avisamos o motivo claramente.
+  const livekitIsLocal = /^wss?:\/\/(localhost|127\.0\.0\.1)/.test(LIVEKIT_URL);
+  if (livekitIsLocal && !['localhost', '127.0.0.1'].includes(req.hostname)) {
+    return res.status(500).json({
+      error:
+        'O servidor está com LIVEKIT_URL apontando para localhost. Configure LIVEKIT_URL (wss://...livekit.cloud), ' +
+        'LIVEKIT_API_KEY e LIVEKIT_API_SECRET nas variáveis de ambiente do Render.',
+    });
   }
 
   const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {

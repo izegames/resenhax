@@ -1,5 +1,6 @@
 import '@livekit/components-styles';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import { DisconnectReason } from 'livekit-client';
 import { useEffect, useState } from 'react';
 import { api, Channel } from '../api';
 
@@ -13,25 +14,27 @@ interface Props {
 // compartilhamento de tela, chat da sala e grade de participantes.
 export default function VoiceRoom({ channel, username, onLeave }: Props) {
   const [conn, setConn] = useState<{ token: string; url: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     setConn(null);
-    setError(null);
+    setProblem(null);
     api
       .voiceToken(channel.id, username)
       .then((data) => active && setConn(data))
-      .catch((err: Error) => active && setError(err.message));
+      .catch((err: Error) => active && setProblem(err.message));
     return () => {
       active = false;
     };
   }, [channel.id, username]);
 
-  if (error) {
+  // Em vez de sair sozinho, mostramos o motivo para facilitar o diagnóstico.
+  if (problem) {
     return (
       <div className="center">
-        <p>Não foi possível entrar na sala: {error}</p>
+        <p>Não foi possível manter a conexão de voz.</p>
+        <p style={{ maxWidth: 480, textAlign: 'center' }}>{problem}</p>
         <button onClick={onLeave}>Voltar</button>
       </div>
     );
@@ -48,7 +51,18 @@ export default function VoiceRoom({ channel, username, onLeave }: Props) {
       connect
       audio
       video={false}
-      onDisconnected={onLeave}
+      onError={(err) => {
+        console.error('LiveKit:', err);
+        setProblem(`${err.message} (servidor de voz: ${conn.url})`);
+      }}
+      onDisconnected={(reason) => {
+        // Clicou em "Sair": volta normalmente. Qualquer outra coisa é uma falha.
+        if (reason === DisconnectReason.CLIENT_INITIATED) {
+          onLeave();
+        } else {
+          setProblem((prev) => prev ?? `Desconectado da sala (motivo: ${reason ?? 'falha ao conectar'}) no servidor ${conn.url}`);
+        }
+      }}
     >
       <VideoConference />
     </LiveKitRoom>
